@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stargazing Planner — SEDS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #07090f;
+      --surface: #0e1220;
+      --surface2: #151a2e;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.13);
+      --text: #e8eaf0;
+      --text-muted: #7a849a;
+      --text-dim: #3e4560;
+      --accent: #7b9cff;
+      --accent2: #c084fc;
+      --gold: #f0c040;
+      --green: #4ade80;
+      --amber: #fb923c;
+      --red: #f87171;
+      --mono: 'Space Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
+
+    html { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse 60% 40% at 80% 10%, rgba(123,156,255,0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 30% at 10% 80%, rgba(192,132,252,0.05) 0%, transparent 60%),
+        var(--bg);
+    }
+
+    /* Stars background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 20% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 75% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 45% 60%, rgba(255,255,255,0.35) 0%, transparent 100%),
+        radial-gradient(1px 1px at 85% 70%, rgba(255,255,255,0.45) 0%, transparent 100%),
+        radial-gradient(1px 1px at 10% 50%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 60% 85%, rgba(255,255,255,0.35) 0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 90%, rgba(255,255,255,0.25) 0%, transparent 100%),
+        radial-gradient(1px 1px at 90% 45%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 55% 20%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 5% 25%, rgba(255,255,255,0.35) 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 55%, rgba(255,255,255,0.25) 0%, transparent 100%),
+        radial-gradient(1px 1px at 40% 40%, rgba(255,255,255,0.2) 0%, transparent 100%),
+        radial-gradient(1px 1px at 95% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 25% 70%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 65% 10%, rgba(255,255,255,0.45) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 4rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 3rem; }
+    .header-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      opacity: 0.8;
+    }
+    .header h1 {
+      font-family: var(--mono);
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.1;
+      margin-bottom: 0.75rem;
+    }
+    .header h1 span { color: var(--accent); }
+    .header p { color: var(--text-muted); font-size: 15px; font-weight: 300; }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Location toggle */
+    .loc-toggle { display: flex; gap: 8px; margin-bottom: 1rem; }
+    .loc-btn {
+      flex: 1; padding: 9px 12px; font-size: 13px; font-family: var(--sans);
+      border: 0.5px solid var(--border2); border-radius: 10px;
+      background: transparent; color: var(--text-muted); cursor: pointer;
+      transition: all 0.2s;
+    }
+    .loc-btn:hover { border-color: rgba(123,156,255,0.3); color: var(--text); }
+    .loc-btn.active { background: rgba(123,156,255,0.1); border-color: rgba(123,156,255,0.4); color: var(--accent); }
+
+    /* Form elements */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
+    input[type=date], input[type=time], input[type=text] {
+      background: var(--surface2); border: 0.5px solid var(--border2);
+      border-radius: 10px; color: var(--text); font-size: 14px; font-family: var(--sans);
+      padding: 10px 14px; width: 100%; outline: none; transition: border-color 0.2s;
+    }
+    input:focus { border-color: rgba(123,156,255,0.5); }
+    input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.6); }
+
+    /* Plan button */
+    .plan-btn {
+      width: 100%; margin-top: 1rem; padding: 13px;
+      font-family: var(--mono); font-size: 13px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      background: linear-gradient(135deg, rgba(123,156,255,0.15), rgba(192,132,252,0.15));
+      border: 0.5px solid rgba(123,156,255,0.4); border-radius: 10px;
+      color: var(--accent); cursor: pointer; transition: all 0.2s;
+    }
+    .plan-btn:hover { background: linear-gradient(135deg, rgba(123,156,255,0.25), rgba(192,132,252,0.25)); border-color: rgba(123,156,255,0.7); }
+    .plan-btn:active { transform: scale(0.99); }
+
+    /* Loading */
+    .loading { display: none; text-align: center; padding: 2.5rem 0; color: var(--text-muted); font-family: var(--mono); font-size: 13px; }
+    .loading span { animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+    /* Results */
+    .results { display: none; }
+    .results.visible { display: block; animation: fadeUp 0.4s ease; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+    /* Score card */
+    .score-card { display: flex; align-items: center; gap: 1.5rem; }
+    .score-dial {
+      width: 80px; height: 80px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 26px; font-weight: 700;
+      flex-shrink: 0;
+      border: 1.5px solid;
+    }
+    .score-dial.good { background: rgba(74,222,128,0.1); color: var(--green); border-color: rgba(74,222,128,0.3); }
+    .score-dial.ok { background: rgba(251,146,60,0.1); color: var(--amber); border-color: rgba(251,146,60,0.3); }
+    .score-dial.bad { background: rgba(248,113,113,0.1); color: var(--red); border-color: rgba(248,113,113,0.3); }
+    .score-title { font-size: 17px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+    .score-meta { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+
+    /* Badge */
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 6px;
+      font-size: 11px; font-family: var(--mono); letter-spacing: 0.05em;
+    }
+    .badge-good { background: rgba(74,222,128,0.12); color: var(--green); border: 0.5px solid rgba(74,222,128,0.25); }
+    .badge-ok   { background: rgba(251,146,60,0.12); color: var(--amber); border: 0.5px solid rgba(251,146,60,0.25); }
+    .badge-bad  { background: rgba(248,113,113,0.12); color: var(--red); border: 0.5px solid rgba(248,113,113,0.25); }
+
+    /* Metric grid */
+    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; }
+    .metric { background: var(--surface2); border-radius: 10px; padding: 1rem; }
+    .metric-lbl { font-size: 11px; color: var(--text-muted); font-family: var(--mono); margin-bottom: 6px; }
+    .metric-val { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--text); }
+    .metric-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Moon */
+    .moon-row { display: flex; align-items: center; gap: 1.5rem; }
+    .moon-glyph { font-size: 56px; line-height: 1; }
+    .moon-detail { flex: 1; }
+    .moon-name { font-family: var(--mono); font-size: 18px; color: var(--text); font-weight: 700; }
+    .moon-pct { font-size: 13px; color: var(--text-muted); margin: 4px 0 10px; }
+    .illum-bar { height: 4px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin-bottom: 10px; }
+    .illum-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--gold)); border-radius: 99px; transition: width 0.6s ease; }
+    .moon-times { display: flex; gap: 1.5rem; font-size: 13px; color: var(--text-muted); }
+    .moon-times strong { color: var(--text); font-family: var(--mono); font-weight: 400; }
+
+    /* Planet rows */
+    .planet-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
+    .planet-row:last-child { border-bottom: none; }
+    .planet-left { display: flex; align-items: center; gap: 12px; }
+    .planet-sym { font-size: 20px; width: 28px; text-align: center; }
+    .planet-name { font-size: 14px; font-weight: 500; color: var(--text); }
+    .planet-right { text-align: right; font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
+
+    /* Bonus chips */
+    .bonus-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .bonus-chip { background: var(--surface2); border: 0.5px solid var(--border2); border-radius: 10px; padding: 8px 14px; }
+    .bonus-chip-name { font-size: 13px; font-weight: 500; color: var(--text); }
+    .bonus-chip-note { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-family: var(--mono); }
+
+    /* Tips */
+    .tip { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+    .tip:last-child { border-bottom: none; }
+    .tip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 6px; opacity: 0.6; }
+
+    .divider { height: 0.5px; background: var(--border); margin: 1.25rem 0; }
+    .tip-info { background: rgba(123,156,255,0.07); border: 0.5px solid rgba(123,156,255,0.15); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--text-muted); margin-top: 0.75rem; line-height: 1.6; }
+
+    .auto-status { font-size: 12px; color: var(--text-muted); font-family: var(--mono); padding: 6px 0 10px; }
+
+    @media (max-width: 520px) {
+      .form-row { grid-template-columns: 1fr; }
+      .score-card { flex-direction: column; text-align: center; }
+      .moon-row { flex-direction: column; text-align: center; }
+      .moon-times { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header class="header">
+    <div class="header-label">✦ SEDS Stargazing Tool</div>
+    <h1>Night Sky<br><span>Planner</span></h1>
+    <p>Weather · Moon · Planets · Deep sky objects — for any date and location.</p>
+  </header>
+
+  <!-- Input card -->
+  <div class="card">
+    <div class="section-label">// Session setup</div>
+
+    <div class="loc-toggle">
+      <button class="loc-btn active" id="btn-auto" onclick="setLocMode('auto')">⊕ Auto-detect location</button>
+      <button class="loc-btn" id="btn-manual" onclick="setLocMode('manual')">⌖ Enter location</button>
+    </div>
+
+    <div id="auto-status" class="auto-status">Will use your browser location when you plan.</div>
+    <div id="manual-loc" style="display:none; margin-bottom:12px;">
+      <div class="form-group">
+        <label class="form-label">// City or place name</label>
+        <input type="text" id="loc-input" placeholder="e.g. Coimbatore, India" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">// Date</label>
+        <input type="date" id="obs-date" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">// Local time</label>
+        <input type="time" id="obs-time" value="21:00" />
+      </div>
+    </div>
+
+    <button class="plan-btn" onclick="planSession()">→ Plan this session</button>
+  </div>
+
+  <div class="loading" id="loading"><span>Scanning the skies…</span></div>
+
+  <div class="results" id="results">
+
+    <!-- Score -->
+    <div class="card">
+      <div class="section-label">// Overall rating</div>
+      <div class="score-card">
+        <div class="score-dial" id="score-dial"><span id="score-num">—</span></div>
+        <div>
+          <div class="score-title" id="score-title">—</div>
+          <div class="score-meta" id="score-meta">—</div>
+          <div style="margin-top:10px;" id="score-badge"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weather -->
+    <div class="card">
+      <div class="section-label">// Weather conditions</div>
+      <div class="metric-grid" id="weather-grid"></div>
+      <div class="divider"></div>
+      <div class="tip-info" id="weather-tip"></div>
+    </div>
+
+    <!-- Moon -->
+    <div class="card">
+      <div class="section-label">// Moon</div>
+      <div class="moon-row">
+        <div class="moon-glyph" id="moon-icon">🌑</div>
+        <div class="moon-detail">
+          <div class="moon-name" id="moon-phase-name">—</div>
+          <div class="moon-pct" id="moon-illum">—% illuminated</div>
+          <div class="illum-bar"><div class="illum-fill" id="illum-fill" style="width:0%"></div></div>
+          <div class="moon-times">
+            <span>↑ Moonrise: <strong id="moonrise">—</strong></span>
+            <span>↓ Moonset: <strong id="moonset">—</strong></span>
+          </div>
+          <div style="margin-top:10px;" id="moon-badge"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Planets -->
+    <div class="card">
+      <div class="section-label">// Planet visibility</div>
+      <div id="planet-list"></div>
+    </div>
+
+    <!-- Bonus objects -->
+    <div class="card">
+      <div class="section-label">// Bonus objects tonight</div>
+      <div class="bonus-grid" id="bonus-list"></div>
+    </div>
+
+    <!-- Tips -->
+    <div class="card">
+      <div class="section-label">// Session tips</div>
+      <div id="tips-list"></div>
+    </div>
+
+  </div><!-- /results -->
+</div><!-- /container -->
+
+<script>
+const GEO_API = 'https://geocoding-api.open-meteo.com/v1/search';
+const WEATHER_API = 'https://api.open-meteo.com/v1/forecast';
+const NOMINATIM = 'https://nominatim.openstreetmap.org/reverse';
+
+let locMode = 'auto';
+let userLat = null, userLon = null, userCity = '';
+
+// Set default date to today
+document.getElementById('obs-date').value = new Date().toISOString().split('T')[0];
+
+function setLocMode(m) {
+  locMode = m;
+  document.getElementById('btn-auto').classList.toggle('active', m === 'auto');
+  document.getElementById('btn-manual').classList.toggle('active', m === 'manual');
+  document.getElementById('manual-loc').style.display = m === 'manual' ? 'block' : 'none';
+  document.getElementById('auto-status').style.display = m === 'auto' ? 'block' : 'none';
+}
+
+// ── Astronomy functions ──────────────────────────────────────────────────────
+
+function moonPhase(date) {
+  const lun = 29.53058867;
+  const known = new Date(2000, 0, 6, 18, 14);
+  const age = ((( date - known) / 86400000) % lun + lun) % lun;
+  const illum = Math.round(50 * (1 - Math.cos(2 * Math.PI * age / lun)));
+  let name, icon;
+  if (age < 1.85)       { name = 'New moon';        icon = '🌑'; }
+  else if (age < 7.38)  { name = 'Waxing crescent'; icon = '🌒'; }
+  else if (age < 9.22)  { name = 'First quarter';   icon = '🌓'; }
+  else if (age < 14.76) { name = 'Waxing gibbous';  icon = '🌔'; }
+  else if (age < 16.61) { name = 'Full moon';       icon = '🌕'; }
+  else if (age < 22.15) { name = 'Waning gibbous';  icon = '🌖'; }
+  else if (age < 23.99) { name = 'Last quarter';    icon = '🌗'; }
+  else                  { name = 'Waning crescent'; icon = '🌘'; }
+  return { name, icon, illum, age };
+}
+
+function moonRiseSet(date, lat, lon) {
+  const d2r = Math.PI / 180;
+  const daysSinceJ2000 = (date / 86400000) - 10957.5;
+  const L = ((218.316 + 13.176396 * daysSinceJ2000) % 360 + 360) % 360;
+  const decl = 23.45 * Math.sin(d2r * (360 / 365) * (daysSinceJ2000 + 284));
+  const cosH = (Math.sin(d2r * -0.833) - Math.sin(d2r * lat) * Math.sin(d2r * decl))
+             / (Math.cos(d2r * lat) * Math.cos(d2r * decl));
+  if (Math.abs(cosH) > 1) return { rise: 'Always visible', set: '—' };
+  const H = Math.acos(Math.max(-1, Math.min(1, cosH))) * (180 / Math.PI);
+  const transit = ((360 - L + lon) / 15 % 24 + 24) % 24;
+  const fmt = h => {
+    const hh = Math.floor(((h % 24) + 24) % 24);
+    const mm = Math.floor((h - Math.floor(h)) * 60);
+    return `${hh % 12 || 12}:${mm.toString().padStart(2,'0')} ${hh >= 12 ? 'PM' : 'AM'}`;
+  };
+  return { rise: fmt(transit - H / 15), set: fmt(transit + H / 15) };
+}
+
+function planetVisibility(date) {
+  const planets = [
+    { name: 'Mercury', sym: '☿', period: 87.97,  base: 20  },
+    { name: 'Venus',   sym: '♀', period: 224.7,  base: 45  },
+    { name: 'Mars',    sym: '♂', period: 687,    base: 120 },
+    { name: 'Jupiter', sym: '♃', period: 4332,   base: 200 },
+    { name: 'Saturn',  sym: '♄', period: 10759,  base: 300 },
+  ];
+  const days = (date - new Date(2000, 0, 1)) / 86400000;
+  return planets.map(p => {
+    const angle = (p.base + (days / p.period) * 360) % 360;
+    const elong = Math.abs(angle - 180);
+    let status, when;
+    if (elong < 18)       { status = 'Too close to sun'; when = '—'; }
+    else if (angle < 180) { status = 'Evening sky';      when = 'After sunset'; }
+    else if (angle >= 180 && elong < 90) { status = 'Morning sky'; when = 'Before sunrise'; }
+    else                  { status = 'Good visibility';  when = 'Most of the night'; }
+    return { ...p, status, when, elong: Math.round(elong) };
+  });
+}
+
+function bonusObjects(date, lat) {
+  const m = date.getMonth();
+  const objs = [];
+  if (m >= 5 && m <= 8) objs.push({ name: 'Milky Way core', note: 'Best Jun–Aug, face south' });
+  if (m === 7)          objs.push({ name: 'Perseids meteor shower', note: 'Peak Aug 11–13, 100/hr' });
+  if (m >= 10 || m <= 1) objs.push({ name: 'Orion Nebula (M42)', note: 'Naked-eye from dark sites' });
+  objs.push({ name: 'Andromeda Galaxy (M31)', note: 'Best naked-eye galaxy' });
+  objs.push({ name: 'Pleiades cluster', note: 'Binoculars recommended' });
+  if (m >= 3 && m <= 8)  objs.push({ name: 'Virgo galaxy cluster', note: 'Telescope needed' });
+  if (lat > 10)          objs.push({ name: 'Polaris (North Star)', note: 'Always due north' });
+  return objs;
+}
+
+// ── Location helpers ─────────────────────────────────────────────────────────
+
+async function getAutoLocation() {
+  return new Promise((res, rej) => {
+    navigator.geolocation.getCurrentPosition(async pos => {
+      userLat = pos.coords.latitude;
+      userLon = pos.coords.longitude;
+      try {
+        const r = await fetch(`${NOMINATIM}?lat=${userLat}&lon=${userLon}&format=json`);
+        const d = await r.json();
+        userCity = d.address?.city || d.address?.town || d.address?.village || 'Your location';
+      } catch { userCity = 'Your location'; }
+      res();
+    }, rej, { timeout: 8000 });
+  });
+}
+
+async function getManualLocation(query) {
+  const r = await fetch(`${GEO_API}?name=${encodeURIComponent(query)}&count=1&language=en&format=json`);
+  const d = await r.json();
+  if (!d.results?.length) throw new Error('Location not found. Try a nearby city name.');
+  userLat = d.results[0].latitude;
+  userLon = d.results[0].longitude;
+  userCity = d.results[0].name + (d.results[0].country ? ', ' + d.results[0].country : '');
+}
+
+// ── Main planner ─────────────────────────────────────────────────────────────
+
+async function planSession() {
+  const dateStr = document.getElementById('obs-date').value;
+  const timeStr = document.getElementById('obs-time').value;
+  if (!dateStr) { alert('Please select a date.'); return; }
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('results').classList.remove('visible');
+
+  try {
+    if (locMode === 'auto') {
+      await getAutoLocation();
+    } else {
+      const q = document.getElementById('loc-input').value.trim();
+      if (!q) { alert('Please enter a location.'); document.getElementById('loading').style.display='none'; return; }
+      await getManualLocation(q);
+    }
+
+    const obsDate = new Date(dateStr + 'T' + timeStr);
+
+    // Fetch weather from Open-Meteo (free, no API key)
+    const params = new URLSearchParams({
+      latitude: userLat, longitude: userLon, timezone: 'auto',
+      forecast_days: 3,
+      daily: 'precipitation_sum,cloud_cover_mean,wind_speed_10m_max',
+      hourly: 'cloud_cover,temperature_2m,relative_humidity_2m,wind_speed_10m,visibility'
+    });
+    const wxRes = await fetch(`${WEATHER_API}?${params}`);
+    const wx = await wxRes.json();
+
+    const dateIdx  = (wx.daily?.time  || []).indexOf(dateStr);
+    const hourKey  = dateStr + 'T' + timeStr.substring(0,5);
+    const hourIdx  = (wx.hourly?.time || []).indexOf(hourKey);
+
+    let cloud = 40, temp = 24, humidity = 55, wind = 8, vis = 20, precip = 0;
+    if (dateIdx >= 0) {
+      cloud  = wx.daily.cloud_cover_mean[dateIdx]  ?? cloud;
+      precip = wx.daily.precipitation_sum[dateIdx] ?? precip;
+      wind   = wx.daily.wind_speed_10m_max[dateIdx] ?? wind;
+    }
+    if (hourIdx >= 0) {
+      cloud    = wx.hourly.cloud_cover[hourIdx]           ?? cloud;
+      temp     = wx.hourly.temperature_2m[hourIdx]        ?? temp;
+      humidity = wx.hourly.relative_humidity_2m[hourIdx]  ?? humidity;
+      wind     = wx.hourly.wind_speed_10m[hourIdx]        ?? wind;
+      vis      = (wx.hourly.visibility[hourIdx] ?? 20000) / 1000;
+    }
+
+    // Astronomy
+    const moon    = moonPhase(obsDate);
+    const times   = moonRiseSet(obsDate, userLat, userLon);
+    const planets = planetVisibility(obsDate);
+    const bonus   = bonusObjects(obsDate, userLat);
+
+    // Score (0–100)
+    let score = 100;
+    if (cloud > 80)    score -= 40; else if (cloud > 50) score -= 25; else if (cloud > 20) score -= 10;
+    if (moon.illum > 80) score -= 25; else if (moon.illum > 40) score -= 12;
+    if (precip > 1)    score -= 30;
+    if (wind > 30)     score -= 10;
+    if (humidity > 85) score -= 5;
+    score = Math.max(5, Math.min(100, score));
+
+    // ── Render ──────────────────────────────────────────────────
+
+    // Score
+    const dial = document.getElementById('score-dial');
+    document.getElementById('score-num').textContent = score;
+    if (score >= 70) {
+      dial.className = 'score-dial good';
+      document.getElementById('score-title').textContent = 'Great night for stargazing';
+      document.getElementById('score-badge').innerHTML = '<span class="badge badge-good">Go out tonight!</span>';
+    } else if (score >= 40) {
+      dial.className = 'score-dial ok';
+      document.getElementById('score-title').textContent = 'Decent session possible';
+      document.getElementById('score-badge').innerHTML = '<span class="badge badge-ok">Partial session</span>';
+    } else {
+      dial.className = 'score-dial bad';
+      document.getElementById('score-title').textContent = 'Poor conditions tonight';
+      document.getElementById('score-badge').innerHTML = '<span class="badge badge-bad">Consider rescheduling</span>';
+    }
+    document.getElementById('score-meta').textContent = `${userCity} · ${obsDate.toDateString()} · ${timeStr}`;
+
+    // Weather metrics
+    const cb = c => c < 20 ? 'badge-good' : c < 60 ? 'badge-ok' : 'badge-bad';
+    document.getElementById('weather-grid').innerHTML = `
+      <div class="metric"><div class="metric-lbl">// cloud cover</div><div class="metric-val">${Math.round(cloud)}%</div><div class="metric-sub"><span class="badge ${cb(cloud)}">${cloud<20?'Clear':cloud<60?'Partly cloudy':'Overcast'}</span></div></div>
+      <div class="metric"><div class="metric-lbl">// temperature</div><div class="metric-val">${Math.round(temp)}°C</div><div class="metric-sub">At ${timeStr}</div></div>
+      <div class="metric"><div class="metric-lbl">// humidity</div><div class="metric-val">${Math.round(humidity)}%</div><div class="metric-sub">${humidity>80?'Dew risk':'Comfortable'}</div></div>
+      <div class="metric"><div class="metric-lbl">// wind</div><div class="metric-val">${Math.round(wind)}</div><div class="metric-sub">km/h · ${wind<15?'Calm':'Breezy'}</div></div>
+      <div class="metric"><div class="metric-lbl">// precipitation</div><div class="metric-val">${precip.toFixed(1)}</div><div class="metric-sub">mm · <span class="badge ${precip<0.5?'badge-good':precip<2?'badge-ok':'badge-bad'}">${precip<0.5?'None':'Rain'}</span></div></div>
+      <div class="metric"><div class="metric-lbl">// visibility</div><div class="metric-val">${vis.toFixed(0)}</div><div class="metric-sub">km · ${vis>15?'Excellent':'Reduced'}</div></div>
+    `;
+    document.getElementById('weather-tip').textContent = cloud < 20
+      ? 'Skies are clear — ideal for deep sky objects and astrophotography.'
+      : cloud < 50
+      ? 'Partial clouds expected. Watch for clear windows throughout the session.'
+      : 'Heavy cloud cover forecast. Monitor updates closer to session time.';
+
+    // Moon
+    document.getElementById('moon-icon').textContent = moon.icon;
+    document.getElementById('moon-phase-name').textContent = moon.name;
+    document.getElementById('moon-illum').textContent = `${moon.illum}% illuminated`;
+    document.getElementById('illum-fill').style.width = moon.illum + '%';
+    document.getElementById('moonrise').textContent = times.rise;
+    document.getElementById('moonset').textContent = times.set;
+    const mb = moon.illum < 25 ? 'badge-good' : moon.illum < 60 ? 'badge-ok' : 'badge-bad';
+    const mm = moon.illum < 25 ? 'Excellent for deep sky' : moon.illum < 60 ? 'Moderate moonlight' : 'Bright — stick to planets';
+    document.getElementById('moon-badge').innerHTML = `<span class="badge ${mb}">${mm}</span>`;
+
+    // Planets
+    document.getElementById('planet-list').innerHTML = planets.map(p => `
+      <div class="planet-row">
+        <div class="planet-left">
+          <div class="planet-sym">${p.sym}</div>
+          <div><div class="planet-name">${p.name}</div><div style="font-size:11px;color:var(--text-muted);font-family:var(--mono);">elong. ${p.elong}°</div></div>
+        </div>
+        <div class="planet-right"><div>${p.status}</div><div>${p.when}</div></div>
+      </div>`).join('');
+
+    // Bonus objects
+    document.getElementById('bonus-list').innerHTML = bonus.map(b => `
+      <div class="bonus-chip">
+        <div class="bonus-chip-name">${b.name}</div>
+        <div class="bonus-chip-note">${b.note}</div>
+      </div>`).join('');
+
+    // Tips
+    const tips = [];
+    if (cloud < 30)    tips.push('Arrive 20–30 min early to allow your eyes to dark-adapt fully.');
+    if (moon.illum > 50) tips.push('High moon brightness — orient your telescope away from the moon for faint objects.');
+    if (humidity > 75) tips.push('High humidity may cause dew on optics. Bring a dew cloth or heater strip.');
+    if (wind < 15)     tips.push('Calm winds — good night for long-exposure astrophotography.');
+    tips.push('Use red-light mode on your phone to preserve night vision between views.');
+    tips.push('Identify the darkest part of your horizon and start your deep sky session there.');
+    document.getElementById('tips-list').innerHTML = tips.map(t =>
+      `<div class="tip"><div class="tip-dot"></div><div>${t}</div></div>`).join('');
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('results').classList.add('visible');
+
+  } catch (e) {
+    document.getElementById('loading').style.display = 'none';
+    alert('Error: ' + (e.message || 'Could not fetch data. Check your internet connection.'));
+  }
+}
+</script>
+</body>
+</html>
