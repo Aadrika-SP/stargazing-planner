@@ -1,303 +1,174 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stargazing Planner</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090f;--surface:#0e1220;--surface2:#151a2e;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#e8eaf0;--muted:#7a849a;--dim:#3e4560;
+  --accent:#7b9cff;--gold:#f0c040;--green:#4ade80;--amber:#fb923c;--red:#f87171;--purple:#c084fc;
+  --mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;
+}
+.light-mode{
+  --bg:#f5f5f0;--surface:#ffffff;--surface2:#f0eff8;
+  --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);
+  --text:#1a1a2e;--muted:#6b7280;--dim:#c5c8d0;
+  --accent:#4a6cf7;--gold:#d97706;--green:#16a34a;--amber:#ea580c;--red:#dc2626;--purple:#9333ea;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);transition:background 0.3s,color 0.3s;min-height:100vh;padding:0 0 3rem;}
+.stars-bg{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:1;transition:opacity 0.3s;}
+.light-mode .stars-bg{opacity:0;}
+.wrap{max-width:760px;margin:0 auto;padding:2rem 1.25rem;position:relative;z-index:1;}
+.hdr{text-align:center;margin-bottom:2rem;}
+.hdr-tag{font-family:var(--mono);font-size:11px;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;margin-bottom:0.75rem;}
+.hdr h1{font-family:var(--mono);font-size:clamp(1.6rem,5vw,2.4rem);font-weight:700;color:var(--text);line-height:1.1;margin-bottom:0.5rem;}
+.hdr h1 span{color:var(--accent);}
+.hdr p{color:var(--muted);font-size:14px;}
+.theme-toggle{position:absolute;top:0;right:0;background:var(--surface);border:0.5px solid var(--border2);border-radius:10px;padding:8px 12px;cursor:pointer;color:var(--muted);font-size:13px;font-family:var(--mono);display:flex;align-items:center;gap:6px;transition:all 0.2s;}
+.theme-toggle:hover{color:var(--text);border-color:var(--accent);}
+.card{background:var(--surface);border:0.5px solid var(--border2);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.sec-lbl{font-family:var(--mono);font-size:10px;letter-spacing:0.18em;color:var(--dim);text-transform:uppercase;margin-bottom:1rem;}
+.loc-toggle{display:flex;gap:8px;margin-bottom:1rem;}
+.lbtn{flex:1;padding:9px 10px;font-size:13px;font-family:var(--sans);border:0.5px solid var(--border2);border-radius:10px;background:transparent;color:var(--muted);cursor:pointer;transition:all 0.2s;}
+.lbtn:hover{color:var(--text);}
+.lbtn.active{background:rgba(123,156,255,0.1);border-color:rgba(123,156,255,0.4);color:var(--accent);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fg{display:flex;flex-direction:column;gap:6px;}
+.fl{font-size:11px;color:var(--muted);font-family:var(--mono);}
+input[type=date],input[type=time],input[type=text]{background:var(--surface2);border:0.5px solid var(--border2);border-radius:10px;color:var(--text);font-size:14px;font-family:var(--sans);padding:10px 14px;width:100%;outline:none;transition:border-color 0.2s;}
+input:focus{border-color:rgba(123,156,255,0.5);}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0.6);}
+.plan-btn{width:100%;margin-top:1rem;padding:13px;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:rgba(123,156,255,0.1);border:0.5px solid rgba(123,156,255,0.4);border-radius:10px;color:var(--accent);cursor:pointer;transition:all 0.2s;}
+.plan-btn:hover{background:rgba(123,156,255,0.2);border-color:rgba(123,156,255,0.7);}
+.loading{display:none;text-align:center;padding:2.5rem 0;color:var(--muted);font-family:var(--mono);font-size:13px;}
+.loading span{animation:pulse 1.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:0.4}50%{opacity:1}}
+.results{display:none;}
+.results.visible{display:block;animation:fadeUp 0.4s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.score-card{display:flex;align-items:center;gap:1.5rem;}
+.score-dial{width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:24px;font-weight:700;flex-shrink:0;border:1.5px solid;}
+.dial-good{background:rgba(74,222,128,0.1);color:var(--green);border-color:rgba(74,222,128,0.3);}
+.dial-ok{background:rgba(251,146,60,0.1);color:var(--amber);border-color:rgba(251,146,60,0.3);}
+.dial-bad{background:rgba(248,113,113,0.1);color:var(--red);border-color:rgba(248,113,113,0.3);}
+.badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-family:var(--mono);letter-spacing:0.04em;}
+.bg{background:rgba(74,222,128,0.1);color:var(--green);border:0.5px solid rgba(74,222,128,0.25);}
+.bo{background:rgba(251,146,60,0.1);color:var(--amber);border:0.5px solid rgba(251,146,60,0.25);}
+.bb{background:rgba(248,113,113,0.1);color:var(--red);border:0.5px solid rgba(248,113,113,0.25);}
+.bp{background:rgba(192,132,252,0.1);color:var(--purple);border:0.5px solid rgba(192,132,252,0.25);}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
+.metric{background:var(--surface2);border-radius:10px;padding:0.9rem;}
+.ml{font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:6px;}
+.mv{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--text);}
+.ms{font-size:11px;color:var(--muted);margin-top:4px;}
+.moon-row{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;}
+.moon-glyph{font-size:52px;line-height:1;flex-shrink:0;}
+.moon-detail{flex:1;min-width:180px;}
+.moon-name{font-family:var(--mono);font-size:17px;color:var(--text);font-weight:700;}
+.moon-pct{font-size:13px;color:var(--muted);margin:4px 0 8px;}
+.illum-bar{height:4px;background:var(--surface2);border-radius:99px;overflow:hidden;margin-bottom:10px;}
+.illum-fill{height:100%;background:linear-gradient(90deg,#7b9cff,#f0c040);border-radius:99px;transition:width 0.6s ease;}
+.moon-times{display:flex;gap:1.25rem;font-size:13px;color:var(--muted);flex-wrap:wrap;}
+.moon-times strong{color:var(--text);font-family:var(--mono);font-weight:400;}
+.planet-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);}
+.planet-row:last-child{border-bottom:none;}
+.pl-left{display:flex;align-items:center;gap:10px;}
+.pl-sym{font-size:20px;width:28px;text-align:center;}
+.pl-name{font-size:14px;font-weight:500;color:var(--text);}
+.pl-sub{font-size:11px;color:var(--muted);font-family:var(--mono);}
+.pl-right{text-align:right;font-size:12px;color:var(--muted);font-family:var(--mono);}
+.sky-table{width:100%;border-collapse:collapse;}
+.sky-table th{font-family:var(--mono);font-size:10px;letter-spacing:0.12em;color:var(--dim);text-transform:uppercase;padding:6px 10px;text-align:left;border-bottom:0.5px solid var(--border2);}
+.sky-table td{padding:10px;font-size:13px;border-bottom:0.5px solid var(--border);}
+.sky-table tr:last-child td{border-bottom:none;}
+.sky-table td:first-child{font-weight:500;color:var(--text);}
+.sky-table td.yes{color:var(--green);}
+.sky-table td.no{color:var(--red);}
+.sky-table td.partial{color:var(--amber);}
+.bonus-grid{display:flex;flex-wrap:wrap;gap:8px;}
+.bonus-chip{background:var(--surface2);border:0.5px solid var(--border2);border-radius:10px;padding:8px 12px;}
+.bc-name{font-size:13px;font-weight:500;color:var(--text);}
+.bc-note{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono);}
+.tip{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:0.5px solid var(--border);font-size:13px;color:var(--muted);line-height:1.6;}
+.tip:last-child{border-bottom:none;}
+.tip-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:7px;opacity:0.6;}
+.divider{height:0.5px;background:var(--border);margin:1rem 0;}
+.tip-info{background:rgba(123,156,255,0.07);border:0.5px solid rgba(123,156,255,0.15);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--muted);margin-top:0.75rem;line-height:1.6;}
+.chart-wrap{position:relative;width:100%;height:200px;margin-top:1rem;}
+.auto-st{font-size:12px;color:var(--muted);font-family:var(--mono);padding:4px 0 10px;}
+.section-score{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;}
+.tabs{display:flex;gap:4px;margin-bottom:1rem;}
+.tab{padding:6px 14px;font-size:12px;font-family:var(--mono);border:0.5px solid var(--border2);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;transition:all 0.2s;}
+.tab.active{background:rgba(123,156,255,0.1);border-color:rgba(123,156,255,0.4);color:var(--accent);}
+@media(max-width:520px){.form-row{grid-template-columns:1fr}.score-card{flex-direction:column;text-align:center}.moon-row{flex-direction:column;text-align:center}}
+</style>
 
-    :root {
-      --bg: #07090f;
-      --surface: #0e1220;
-      --surface2: #151a2e;
-      --border: rgba(255,255,255,0.07);
-      --border2: rgba(255,255,255,0.13);
-      --text: #e8eaf0;
-      --text-muted: #7a849a;
-      --text-dim: #3e4560;
-      --accent: #7b9cff;
-      --accent2: #c084fc;
-      --gold: #f0c040;
-      --green: #4ade80;
-      --amber: #fb923c;
-      --red: #f87171;
-      --mono: 'Space Mono', monospace;
-      --sans: 'DM Sans', sans-serif;
-    }
+<canvas id="stars-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:0;" aria-hidden="true"></canvas>
 
-    html { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; }
+<div class="wrap">
+  <div style="position:relative;">
+    <div class="hdr">
+      <div class="hdr-tag">✦ SEDS Stargazing Tool</div>
+      <h1>Night Sky <span>Planner</span></h1>
+      <p>Weather · Moon · Planets · Constellations · Hour-by-hour forecast</p>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn" aria-label="Toggle light/dark mode">
+      <i class="ti ti-moon" aria-hidden="true"></i><span id="theme-lbl">Light</span>
+    </button>
+  </div>
 
-    body {
-      min-height: 100vh;
-      background:
-        radial-gradient(ellipse 60% 40% at 80% 10%, rgba(123,156,255,0.06) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 30% at 10% 80%, rgba(192,132,252,0.05) 0%, transparent 60%),
-        var(--bg);
-    }
-
-    /* Stars background */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        radial-gradient(1px 1px at 20% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
-        radial-gradient(1px 1px at 75% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 45% 60%, rgba(255,255,255,0.35) 0%, transparent 100%),
-        radial-gradient(1px 1px at 85% 70%, rgba(255,255,255,0.45) 0%, transparent 100%),
-        radial-gradient(1px 1px at 10% 50%, rgba(255,255,255,0.3) 0%, transparent 100%),
-        radial-gradient(1px 1px at 60% 85%, rgba(255,255,255,0.35) 0%, transparent 100%),
-        radial-gradient(1px 1px at 30% 90%, rgba(255,255,255,0.25) 0%, transparent 100%),
-        radial-gradient(1px 1px at 90% 45%, rgba(255,255,255,0.4) 0%, transparent 100%),
-        radial-gradient(1px 1px at 55% 20%, rgba(255,255,255,0.3) 0%, transparent 100%),
-        radial-gradient(1px 1px at 5% 25%, rgba(255,255,255,0.35) 0%, transparent 100%),
-        radial-gradient(1px 1px at 70% 55%, rgba(255,255,255,0.25) 0%, transparent 100%),
-        radial-gradient(1px 1px at 40% 40%, rgba(255,255,255,0.2) 0%, transparent 100%),
-        radial-gradient(1px 1px at 95% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 25% 70%, rgba(255,255,255,0.3) 0%, transparent 100%),
-        radial-gradient(1px 1px at 65% 10%, rgba(255,255,255,0.45) 0%, transparent 100%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .container {
-      max-width: 780px;
-      margin: 0 auto;
-      padding: 3rem 1.5rem 4rem;
-      position: relative;
-      z-index: 1;
-    }
-
-    /* Header */
-    .header { text-align: center; margin-bottom: 3rem; }
-    .header-label {
-      font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 0.2em;
-      color: var(--accent);
-      text-transform: uppercase;
-      margin-bottom: 1rem;
-      opacity: 0.8;
-    }
-    .header h1 {
-      font-family: var(--mono);
-      font-size: clamp(1.8rem, 5vw, 2.8rem);
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1.1;
-      margin-bottom: 0.75rem;
-    }
-    .header h1 span { color: var(--accent); }
-    .header p { color: var(--text-muted); font-size: 15px; font-weight: 300; }
-
-    /* Card */
-    .card {
-      background: var(--surface);
-      border: 0.5px solid var(--border2);
-      border-radius: 16px;
-      padding: 1.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .section-label {
-      font-family: var(--mono);
-      font-size: 10px;
-      letter-spacing: 0.18em;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      margin-bottom: 1.25rem;
-    }
-
-    /* Location toggle */
-    .loc-toggle { display: flex; gap: 8px; margin-bottom: 1rem; }
-    .loc-btn {
-      flex: 1; padding: 9px 12px; font-size: 13px; font-family: var(--sans);
-      border: 0.5px solid var(--border2); border-radius: 10px;
-      background: transparent; color: var(--text-muted); cursor: pointer;
-      transition: all 0.2s;
-    }
-    .loc-btn:hover { border-color: rgba(123,156,255,0.3); color: var(--text); }
-    .loc-btn.active { background: rgba(123,156,255,0.1); border-color: rgba(123,156,255,0.4); color: var(--accent); }
-
-    /* Form elements */
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-label { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
-    input[type=date], input[type=time], input[type=text] {
-      background: var(--surface2); border: 0.5px solid var(--border2);
-      border-radius: 10px; color: var(--text); font-size: 14px; font-family: var(--sans);
-      padding: 10px 14px; width: 100%; outline: none; transition: border-color 0.2s;
-    }
-    input:focus { border-color: rgba(123,156,255,0.5); }
-    input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.6); }
-
-    /* Plan button */
-    .plan-btn {
-      width: 100%; margin-top: 1rem; padding: 13px;
-      font-family: var(--mono); font-size: 13px; font-weight: 700;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      background: linear-gradient(135deg, rgba(123,156,255,0.15), rgba(192,132,252,0.15));
-      border: 0.5px solid rgba(123,156,255,0.4); border-radius: 10px;
-      color: var(--accent); cursor: pointer; transition: all 0.2s;
-    }
-    .plan-btn:hover { background: linear-gradient(135deg, rgba(123,156,255,0.25), rgba(192,132,252,0.25)); border-color: rgba(123,156,255,0.7); }
-    .plan-btn:active { transform: scale(0.99); }
-
-    /* Loading */
-    .loading { display: none; text-align: center; padding: 2.5rem 0; color: var(--text-muted); font-family: var(--mono); font-size: 13px; }
-    .loading span { animation: pulse 1.5s ease-in-out infinite; }
-    @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
-
-    /* Results */
-    .results { display: none; }
-    .results.visible { display: block; animation: fadeUp 0.4s ease; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-
-    /* Score card */
-    .score-card { display: flex; align-items: center; gap: 1.5rem; }
-    .score-dial {
-      width: 80px; height: 80px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--mono); font-size: 26px; font-weight: 700;
-      flex-shrink: 0;
-      border: 1.5px solid;
-    }
-    .score-dial.good { background: rgba(74,222,128,0.1); color: var(--green); border-color: rgba(74,222,128,0.3); }
-    .score-dial.ok { background: rgba(251,146,60,0.1); color: var(--amber); border-color: rgba(251,146,60,0.3); }
-    .score-dial.bad { background: rgba(248,113,113,0.1); color: var(--red); border-color: rgba(248,113,113,0.3); }
-    .score-title { font-size: 17px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
-    .score-meta { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
-
-    /* Badge */
-    .badge {
-      display: inline-block; padding: 3px 10px; border-radius: 6px;
-      font-size: 11px; font-family: var(--mono); letter-spacing: 0.05em;
-    }
-    .badge-good { background: rgba(74,222,128,0.12); color: var(--green); border: 0.5px solid rgba(74,222,128,0.25); }
-    .badge-ok   { background: rgba(251,146,60,0.12); color: var(--amber); border: 0.5px solid rgba(251,146,60,0.25); }
-    .badge-bad  { background: rgba(248,113,113,0.12); color: var(--red); border: 0.5px solid rgba(248,113,113,0.25); }
-
-    /* Metric grid */
-    .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; }
-    .metric { background: var(--surface2); border-radius: 10px; padding: 1rem; }
-    .metric-lbl { font-size: 11px; color: var(--text-muted); font-family: var(--mono); margin-bottom: 6px; }
-    .metric-val { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--text); }
-    .metric-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-
-    /* Moon */
-    .moon-row { display: flex; align-items: center; gap: 1.5rem; }
-    .moon-glyph { font-size: 56px; line-height: 1; }
-    .moon-detail { flex: 1; }
-    .moon-name { font-family: var(--mono); font-size: 18px; color: var(--text); font-weight: 700; }
-    .moon-pct { font-size: 13px; color: var(--text-muted); margin: 4px 0 10px; }
-    .illum-bar { height: 4px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin-bottom: 10px; }
-    .illum-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--gold)); border-radius: 99px; transition: width 0.6s ease; }
-    .moon-times { display: flex; gap: 1.5rem; font-size: 13px; color: var(--text-muted); }
-    .moon-times strong { color: var(--text); font-family: var(--mono); font-weight: 400; }
-
-    /* Planet rows */
-    .planet-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
-    .planet-row:last-child { border-bottom: none; }
-    .planet-left { display: flex; align-items: center; gap: 12px; }
-    .planet-sym { font-size: 20px; width: 28px; text-align: center; }
-    .planet-name { font-size: 14px; font-weight: 500; color: var(--text); }
-    .planet-right { text-align: right; font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
-
-    /* Bonus chips */
-    .bonus-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-    .bonus-chip { background: var(--surface2); border: 0.5px solid var(--border2); border-radius: 10px; padding: 8px 14px; }
-    .bonus-chip-name { font-size: 13px; font-weight: 500; color: var(--text); }
-    .bonus-chip-note { font-size: 11px; color: var(--text-muted); margin-top: 2px; font-family: var(--mono); }
-
-    /* Tips */
-    .tip { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 0.5px solid var(--border); font-size: 13px; color: var(--text-muted); line-height: 1.6; }
-    .tip:last-child { border-bottom: none; }
-    .tip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 6px; opacity: 0.6; }
-
-    .divider { height: 0.5px; background: var(--border); margin: 1.25rem 0; }
-    .tip-info { background: rgba(123,156,255,0.07); border: 0.5px solid rgba(123,156,255,0.15); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--text-muted); margin-top: 0.75rem; line-height: 1.6; }
-
-    .auto-status { font-size: 12px; color: var(--text-muted); font-family: var(--mono); padding: 6px 0 10px; }
-
-    @media (max-width: 520px) {
-      .form-row { grid-template-columns: 1fr; }
-      .score-card { flex-direction: column; text-align: center; }
-      .moon-row { flex-direction: column; text-align: center; }
-      .moon-times { justify-content: center; }
-    }
-  </style>
-</head>
-<body>
-<div class="container">
-
-  <header class="header">
-    <div class="header-label">✦ SEDS Stargazing Tool</div>
-    <h1>Night Sky<br><span>Planner</span></h1>
-    <p>Weather · Moon · Planets · Deep sky objects — for any date and location.</p>
-  </header>
-
-  <!-- Input card -->
   <div class="card">
-    <div class="section-label">// Session setup</div>
-
+    <div class="sec-lbl">// Session setup</div>
     <div class="loc-toggle">
-      <button class="loc-btn active" id="btn-auto" onclick="setLocMode('auto')">⊕ Auto-detect location</button>
-      <button class="loc-btn" id="btn-manual" onclick="setLocMode('manual')">⌖ Enter location</button>
+      <button class="lbtn active" id="btn-auto" onclick="setLocMode('auto')"><i class="ti ti-current-location" aria-hidden="true"></i> Auto-detect</button>
+      <button class="lbtn" id="btn-manual" onclick="setLocMode('manual')"><i class="ti ti-map-pin" aria-hidden="true"></i> Enter location</button>
     </div>
-
-    <div id="auto-status" class="auto-status">Will use your browser location when you plan.</div>
-    <div id="manual-loc" style="display:none; margin-bottom:12px;">
-      <div class="form-group">
-        <label class="form-label">// City or place name</label>
-        <input type="text" id="loc-input" placeholder="e.g. Coimbatore, India" />
+    <div id="auto-st" class="auto-st">Will use your browser GPS when you plan.</div>
+    <div id="manual-loc" style="display:none;margin-bottom:12px;">
+      <div class="fg">
+        <label class="fl">// Full location (city, area, landmark…)</label>
+        <input type="text" id="loc-input" placeholder="e.g. Coimbatore, Tamil Nadu, India" />
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Be specific — "Marudhamalai Hill, Coimbatore" works too.</div>
       </div>
     </div>
-
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">// Date</label>
-        <input type="date" id="obs-date" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">// Local time</label>
-        <input type="time" id="obs-time" value="21:00" />
-      </div>
+    <div class="form-row" style="margin-top:8px;">
+      <div class="fg"><label class="fl">// Date</label><input type="date" id="obs-date" /></div>
+      <div class="fg"><label class="fl">// Local time</label><input type="time" id="obs-time" value="21:00" /></div>
     </div>
-
     <button class="plan-btn" onclick="planSession()">→ Plan this session</button>
   </div>
 
-  <div class="loading" id="loading"><span>Scanning the skies…</span></div>
+  <div class="loading" id="loading"><span id="load-msg">Scanning the skies…</span></div>
 
   <div class="results" id="results">
 
-    <!-- Score -->
     <div class="card">
-      <div class="section-label">// Overall rating</div>
+      <div class="sec-lbl">// Overall rating</div>
       <div class="score-card">
         <div class="score-dial" id="score-dial"><span id="score-num">—</span></div>
         <div>
-          <div class="score-title" id="score-title">—</div>
-          <div class="score-meta" id="score-meta">—</div>
+          <div style="font-size:16px;font-weight:500;color:var(--text);" id="score-title">—</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;" id="score-meta">—</div>
           <div style="margin-top:10px;" id="score-badge"></div>
         </div>
       </div>
     </div>
 
-    <!-- Weather -->
     <div class="card">
-      <div class="section-label">// Weather conditions</div>
+      <div class="section-score">
+        <div class="sec-lbl" style="margin-bottom:0;">// Weather conditions</div>
+        <span id="weather-score-badge"></span>
+      </div>
       <div class="metric-grid" id="weather-grid"></div>
       <div class="divider"></div>
+      <div class="sec-lbl">// Hour-by-hour cloud cover</div>
+      <div class="chart-wrap"><canvas id="cloud-chart" role="img" aria-label="Hourly cloud cover chart for the observation night">Hourly cloud cover data.</canvas></div>
+      <div class="divider"></div>
+      <div class="sec-lbl">// Rain probability</div>
+      <div class="chart-wrap" style="height:160px;"><canvas id="rain-chart" role="img" aria-label="Hourly rain probability chart">Hourly rain probability data.</canvas></div>
       <div class="tip-info" id="weather-tip"></div>
     </div>
 
-    <!-- Moon -->
     <div class="card">
-      <div class="section-label">// Moon</div>
+      <div class="sec-lbl">// Moon</div>
       <div class="moon-row">
         <div class="moon-glyph" id="moon-icon">🌑</div>
         <div class="moon-detail">
@@ -307,296 +178,440 @@
           <div class="moon-times">
             <span>↑ Moonrise: <strong id="moonrise">—</strong></span>
             <span>↓ Moonset: <strong id="moonset">—</strong></span>
+            <span>Transit: <strong id="moon-transit">—</strong></span>
           </div>
           <div style="margin-top:10px;" id="moon-badge"></div>
         </div>
       </div>
     </div>
 
-    <!-- Planets -->
     <div class="card">
-      <div class="section-label">// Planet visibility</div>
+      <div class="sec-lbl">// What's visible at your exact time</div>
+      <div id="visibility-table-wrap"></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-lbl">// Planet positions & visibility</div>
       <div id="planet-list"></div>
     </div>
 
-    <!-- Bonus objects -->
     <div class="card">
-      <div class="section-label">// Bonus objects tonight</div>
-      <div class="bonus-grid" id="bonus-list"></div>
+      <div class="sec-lbl">// Constellation visibility tonight</div>
+      <div id="constellation-list" class="bonus-grid"></div>
     </div>
 
-    <!-- Tips -->
     <div class="card">
-      <div class="section-label">// Session tips</div>
+      <div class="sec-lbl">// Bonus deep sky objects</div>
+      <div id="bonus-list" class="bonus-grid"></div>
+    </div>
+
+    <div class="card">
+      <div class="sec-lbl">// Session tips</div>
       <div id="tips-list"></div>
     </div>
 
-  </div><!-- /results -->
-</div><!-- /container -->
+  </div>
+</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <script>
-const GEO_API = 'https://geocoding-api.open-meteo.com/v1/search';
-const WEATHER_API = 'https://api.open-meteo.com/v1/forecast';
-const NOMINATIM = 'https://nominatim.openstreetmap.org/reverse';
+const GEO_API='https://geocoding-api.open-meteo.com/v1/search';
+const WX_API='https://api.open-meteo.com/v1/forecast';
+const NOM='https://nominatim.openstreetmap.org/reverse';
+let locMode='auto',uLat=null,uLon=null,uCity='',isDark=true;
+let cloudChart=null,rainChart=null;
 
-let locMode = 'auto';
-let userLat = null, userLon = null, userCity = '';
+document.getElementById('obs-date').value=new Date().toISOString().split('T')[0];
 
-// Set default date to today
-document.getElementById('obs-date').value = new Date().toISOString().split('T')[0];
-
-function setLocMode(m) {
-  locMode = m;
-  document.getElementById('btn-auto').classList.toggle('active', m === 'auto');
-  document.getElementById('btn-manual').classList.toggle('active', m === 'manual');
-  document.getElementById('manual-loc').style.display = m === 'manual' ? 'block' : 'none';
-  document.getElementById('auto-status').style.display = m === 'auto' ? 'block' : 'none';
+function setLocMode(m){
+  locMode=m;
+  document.getElementById('btn-auto').classList.toggle('active',m==='auto');
+  document.getElementById('btn-manual').classList.toggle('active',m==='manual');
+  document.getElementById('manual-loc').style.display=m==='manual'?'block':'none';
+  document.getElementById('auto-st').style.display=m==='auto'?'block':'none';
 }
 
-// ── Astronomy functions ──────────────────────────────────────────────────────
-
-function moonPhase(date) {
-  const lun = 29.53058867;
-  const known = new Date(2000, 0, 6, 18, 14);
-  const age = ((( date - known) / 86400000) % lun + lun) % lun;
-  const illum = Math.round(50 * (1 - Math.cos(2 * Math.PI * age / lun)));
-  let name, icon;
-  if (age < 1.85)       { name = 'New moon';        icon = '🌑'; }
-  else if (age < 7.38)  { name = 'Waxing crescent'; icon = '🌒'; }
-  else if (age < 9.22)  { name = 'First quarter';   icon = '🌓'; }
-  else if (age < 14.76) { name = 'Waxing gibbous';  icon = '🌔'; }
-  else if (age < 16.61) { name = 'Full moon';       icon = '🌕'; }
-  else if (age < 22.15) { name = 'Waning gibbous';  icon = '🌖'; }
-  else if (age < 23.99) { name = 'Last quarter';    icon = '🌗'; }
-  else                  { name = 'Waning crescent'; icon = '🌘'; }
-  return { name, icon, illum, age };
+function toggleTheme(){
+  isDark=!isDark;
+  document.body.classList.toggle('light-mode',!isDark);
+  document.getElementById('theme-lbl').textContent=isDark?'Light':'Dark';
+  const icon=document.querySelector('#theme-btn .ti');
+  icon.className=isDark?'ti ti-moon':'ti ti-sun';
 }
 
-function moonRiseSet(date, lat, lon) {
-  const d2r = Math.PI / 180;
-  const daysSinceJ2000 = (date / 86400000) - 10957.5;
-  const L = ((218.316 + 13.176396 * daysSinceJ2000) % 360 + 360) % 360;
-  const decl = 23.45 * Math.sin(d2r * (360 / 365) * (daysSinceJ2000 + 284));
-  const cosH = (Math.sin(d2r * -0.833) - Math.sin(d2r * lat) * Math.sin(d2r * decl))
-             / (Math.cos(d2r * lat) * Math.cos(d2r * decl));
-  if (Math.abs(cosH) > 1) return { rise: 'Always visible', set: '—' };
-  const H = Math.acos(Math.max(-1, Math.min(1, cosH))) * (180 / Math.PI);
-  const transit = ((360 - L + lon) / 15 % 24 + 24) % 24;
-  const fmt = h => {
-    const hh = Math.floor(((h % 24) + 24) % 24);
-    const mm = Math.floor((h - Math.floor(h)) * 60);
-    return `${hh % 12 || 12}:${mm.toString().padStart(2,'0')} ${hh >= 12 ? 'PM' : 'AM'}`;
-  };
-  return { rise: fmt(transit - H / 15), set: fmt(transit + H / 15) };
+(function drawStars(){
+  const c=document.getElementById('stars-canvas');
+  const ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  const stars=Array.from({length:200},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.2+0.2,o:Math.random()*0.5+0.15,t:Math.random()*Math.PI*2}));
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(s=>{
+      s.t+=0.008;const o=s.o+Math.sin(s.t)*0.1;
+      ctx.beginPath();ctx.arc(s.x*c.width,s.y*c.height,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${o})`;ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }draw();
+})();
+
+function deg2rad(d){return d*Math.PI/180;}
+
+function julianDay(date){
+  const y=date.getUTCFullYear(),mo=date.getUTCMonth()+1,d=date.getUTCDate();
+  const h=date.getUTCHours()+date.getUTCMinutes()/60;
+  const A=Math.floor((14-mo)/12),Y=y+4800-A,M=mo+12*A-3;
+  return d+Math.floor((153*M+2)/5)+365*Y+Math.floor(Y/4)-Math.floor(Y/100)+Math.floor(Y/400)-32045+h/24;
 }
 
-function planetVisibility(date) {
-  const planets = [
-    { name: 'Mercury', sym: '☿', period: 87.97,  base: 20  },
-    { name: 'Venus',   sym: '♀', period: 224.7,  base: 45  },
-    { name: 'Mars',    sym: '♂', period: 687,    base: 120 },
-    { name: 'Jupiter', sym: '♃', period: 4332,   base: 200 },
-    { name: 'Saturn',  sym: '♄', period: 10759,  base: 300 },
+function moonPhase(date){
+  const lun=29.53058867,known=new Date(Date.UTC(2000,0,6,18,14,0));
+  const age=(((date-known)/86400000)%lun+lun)%lun;
+  const illum=Math.round(50*(1-Math.cos(2*Math.PI*age/lun)));
+  let name,icon;
+  if(age<1.85){name='New moon';icon='🌑';}
+  else if(age<7.38){name='Waxing crescent';icon='🌒';}
+  else if(age<9.22){name='First quarter';icon='🌓';}
+  else if(age<14.76){name='Waxing gibbous';icon='🌔';}
+  else if(age<16.61){name='Full moon';icon='🌕';}
+  else if(age<22.15){name='Waning gibbous';icon='🌖';}
+  else if(age<23.99){name='Last quarter';icon='🌗';}
+  else{name='Waning crescent';icon='🌘';}
+  return{name,icon,illum,age};
+}
+
+function moonRiseSetAccurate(date,lat,lon){
+  const d2r=Math.PI/180,r2d=180/Math.PI;
+  const jd=julianDay(date);
+  const T=(jd-2451545.0)/36525;
+  const L=((218.3164477+481267.88123421*T)%360+360)%360;
+  const M=((134.9633964+477198.8675055*T)%360+360)%360;
+  const F=((93.2720950+483202.0175233*T)%360+360)%360;
+  const D=((297.8501921+445267.1114034*T)%360+360)%360;
+  const lon_moon=(L+6.289*Math.sin(d2r*M)-0.214*Math.sin(d2r*2*M)+1.274*Math.sin(d2r*(2*D-M))+0.658*Math.sin(d2r*2*D))%360;
+  const lat_moon=5.128*Math.sin(d2r*F);
+  const eps=23.4393-0.0130042*T;
+  const ra=Math.atan2(Math.sin(d2r*lon_moon)*Math.cos(d2r*eps)-Math.tan(d2r*lat_moon)*Math.sin(d2r*eps),Math.cos(d2r*lon_moon))*r2d;
+  const decl=Math.asin(Math.sin(d2r*lat_moon)*Math.cos(d2r*eps)+Math.cos(d2r*lat_moon)*Math.sin(d2r*eps)*Math.sin(d2r*lon_moon))*r2d;
+  const LST=(280.46061837+360.98564736629*(jd-2451545)+0.000387933*T*T+lon/15*15)%360;
+  const HA_transit=((ra-LST)%360+360)%360;
+  const transit_h=(HA_transit/15+24)%24;
+  const cosH=(Math.sin(d2r*(-0.833))-Math.sin(d2r*lat)*Math.sin(d2r*decl))/(Math.cos(d2r*lat)*Math.cos(d2r*decl));
+  if(Math.abs(cosH)>1)return{rise:'Circumpolar',set:'—',transit:fmtHour(transit_h),riseH:-1,setH:-1,transitH:transit_h};
+  const H=Math.acos(cosH)*r2d;
+  let riseH=((transit_h-H/15)%24+24)%24;
+  let setH=((transit_h+H/15)%24+24)%24;
+  return{rise:fmtHour(riseH),set:fmtHour(setH),transit:fmtHour(transit_h),riseH,setH,transitH:transit_h};
+}
+
+function fmtHour(h){
+  const hh=Math.floor(((h%24)+24)%24),mm=Math.round(((h%1)+1)%1*60);
+  const mm2=mm>=60?0:mm;const hh2=mm>=60?(hh+1)%24:hh;
+  return`${hh2%12||12}:${mm2.toString().padStart(2,'0')} ${hh2>=12?'PM':'AM'}`;
+}
+
+function solarPosition(date){
+  const jd=julianDay(date);
+  const T=(jd-2451545)/36525;
+  const L0=((280.46646+36000.76983*T)%360+360)%360;
+  const M=((357.52911+35999.05029*T)%360+360)%360;
+  const C=(1.914602-0.004817*T)*Math.sin(deg2rad(M))+(0.019993-0.000101*T)*Math.sin(deg2rad(2*M));
+  const sunLon=L0+C;
+  const eps=23.4393-0.0130042*T;
+  const ra=Math.atan2(Math.cos(deg2rad(eps))*Math.sin(deg2rad(sunLon)),Math.cos(deg2rad(sunLon)))*180/Math.PI;
+  const decl=Math.asin(Math.sin(deg2rad(eps))*Math.sin(deg2rad(sunLon)))*180/Math.PI;
+  return{ra:((ra%360)+360)%360,decl};
+}
+
+function planetPositions(date){
+  const elements=[
+    {name:'Mercury',sym:'☿',T:0.240846,L0:252.2509,L1:149472.6674,a:0.387098,e:0.205630,I:7.005,w:77.4561,color:'#b0b0b0'},
+    {name:'Venus',sym:'♀',T:0.615198,L0:181.9798,L1:58517.8156,a:0.723332,e:0.006772,I:3.394,w:131.5637,color:'#ffd580'},
+    {name:'Mars',sym:'♂',T:1.880848,L0:355.4332,L1:19140.2993,a:1.523679,e:0.093400,I:1.850,w:336.0590,color:'#ff6b4a'},
+    {name:'Jupiter',sym:'♃',T:11.862615,L0:34.3515,L1:3034.7469,a:5.202887,e:0.048944,I:1.303,w:14.7316,color:'#c8a97a'},
+    {name:'Saturn',sym:'♄',T:29.447498,L0:50.0774,L1:1222.4940,a:9.536676,e:0.053590,I:2.486,w:92.5905,color:'#e8d5a0'},
+    {name:'Uranus',sym:'⛢',T:84.016846,L0:314.0550,L1:428.4882,a:19.18916,e:0.047318,I:0.773,w:170.9543,color:'#7de8e8'},
   ];
-  const days = (date - new Date(2000, 0, 1)) / 86400000;
-  return planets.map(p => {
-    const angle = (p.base + (days / p.period) * 360) % 360;
-    const elong = Math.abs(angle - 180);
-    let status, when;
-    if (elong < 18)       { status = 'Too close to sun'; when = '—'; }
-    else if (angle < 180) { status = 'Evening sky';      when = 'After sunset'; }
-    else if (angle >= 180 && elong < 90) { status = 'Morning sky'; when = 'Before sunrise'; }
-    else                  { status = 'Good visibility';  when = 'Most of the night'; }
-    return { ...p, status, when, elong: Math.round(elong) };
+  const d=(date-new Date(Date.UTC(2000,0,1,12)))/86400000;
+  const sun=solarPosition(date);
+  const jd=julianDay(date);
+  const T=(jd-2451545)/36525;
+  const LST_base=(280.46061837+360.98564736629*(jd-2451545))%360;
+
+  return elements.map(p=>{
+    const n=360/(p.T*365.25);
+    const M_planet=((p.L0+p.L1*(d/36525)*100-p.w)%360+360)%360;
+    const M_rad=deg2rad(M_planet);
+    const E=M_rad+p.e*Math.sin(M_rad)*(1+p.e*Math.cos(M_rad));
+    const nu=2*Math.atan(Math.sqrt((1+p.e)/(1-p.e))*Math.tan(E/2))*180/Math.PI;
+    const lon_ecl=((nu+p.w)%360+360)%360;
+    const sunRA=sun.ra;
+    let elong=((lon_ecl-sunRA)%360+360)%360;
+    if(elong>180)elong=360-elong;
+    const LST=(LST_base+uLon)%360;
+    const HA=((lon_ecl-LST)%360+360)%360;
+    const alt=Math.asin(Math.sin(deg2rad(uLat))*Math.sin(deg2rad(p.I))+Math.cos(deg2rad(uLat))*Math.cos(deg2rad(p.I))*Math.cos(deg2rad(HA)))*180/Math.PI;
+    let status,when;
+    if(elong<18){status='Too close to sun';when='—';}
+    else if(elong>150){status='Near opposition';when='Most of night';}
+    else if(lon_ecl>sunRA&&lon_ecl-sunRA<180){status='Evening sky';when='After sunset';}
+    else{status='Morning sky';when='Before sunrise';}
+    return{...p,elong:Math.round(elong),status,when,altDeg:Math.round(alt),lon_ecl};
   });
 }
 
-function bonusObjects(date, lat) {
-  const m = date.getMonth();
-  const objs = [];
-  if (m >= 5 && m <= 8) objs.push({ name: 'Milky Way core', note: 'Best Jun–Aug, face south' });
-  if (m === 7)          objs.push({ name: 'Perseids meteor shower', note: 'Peak Aug 11–13, 100/hr' });
-  if (m >= 10 || m <= 1) objs.push({ name: 'Orion Nebula (M42)', note: 'Naked-eye from dark sites' });
-  objs.push({ name: 'Andromeda Galaxy (M31)', note: 'Best naked-eye galaxy' });
-  objs.push({ name: 'Pleiades cluster', note: 'Binoculars recommended' });
-  if (m >= 3 && m <= 8)  objs.push({ name: 'Virgo galaxy cluster', note: 'Telescope needed' });
-  if (lat > 10)          objs.push({ name: 'Polaris (North Star)', note: 'Always due north' });
-  return objs;
+function isObjectAboveHorizon(riseH,setH,obsH){
+  if(riseH<0)return true;
+  if(riseH<setH)return obsH>=riseH&&obsH<setH;
+  return obsH>=riseH||obsH<setH;
 }
 
-// ── Location helpers ─────────────────────────────────────────────────────────
+function getConstellations(date,lat,obsHour){
+  const month=date.getMonth();
+  const constellations=[
+    {name:'Orion',bestMonths:[10,11,0,1,2],minLat:-90,maxLat:85,icon:'⭐',desc:'The Hunter — M42 inside'},
+    {name:'Scorpius',bestMonths:[4,5,6,7],minLat:-90,maxLat:55,icon:'⭐',desc:'Best from southern latitudes'},
+    {name:'Leo',bestMonths:[1,2,3,4],minLat:-90,maxLat:90,icon:'⭐',desc:'Contains several galaxies'},
+    {name:'Ursa Major',bestMonths:[0,1,2,3,4],minLat:-30,maxLat:90,icon:'⭐',desc:'Big Dipper — points to Polaris'},
+    {name:'Cygnus',bestMonths:[5,6,7,8,9],minLat:-20,maxLat:90,icon:'⭐',desc:'Northern Cross, in Milky Way'},
+    {name:'Cassiopeia',bestMonths:[9,10,11,0],minLat:20,maxLat:90,icon:'⭐',desc:'W-shape, near Andromeda'},
+    {name:'Gemini',bestMonths:[11,0,1,2,3],minLat:-60,maxLat:90,icon:'⭐',desc:'Castor & Pollux'},
+    {name:'Virgo',bestMonths:[2,3,4,5],minLat:-80,maxLat:80,icon:'⭐',desc:'Spica is brightest star'},
+    {name:'Perseus',bestMonths:[9,10,11,0,1],minLat:-35,maxLat:90,icon:'⭐',desc:'Algol double star, Perseids radiant'},
+    {name:'Sagittarius',bestMonths:[5,6,7],minLat:-90,maxLat:55,icon:'⭐',desc:'Points toward galactic centre'},
+    {name:'Andromeda',bestMonths:[8,9,10,11],minLat:-40,maxLat:90,icon:'⭐',desc:'Contains M31 galaxy'},
+    {name:'Taurus',bestMonths:[10,11,0,1],minLat:-65,maxLat:90,icon:'⭐',desc:'Pleiades & Hyades clusters'},
+  ];
+  const nightHours=[20,21,22,23,0,1,2,3,4];
+  return constellations.filter(c=>
+    c.bestMonths.includes(month)&&lat>=c.minLat&&lat<=c.maxLat
+  ).map(c=>{
+    const visible=nightHours.includes(Math.floor(obsHour%24));
+    return{...c,visible};
+  });
+}
 
-async function getAutoLocation() {
-  return new Promise((res, rej) => {
-    navigator.geolocation.getCurrentPosition(async pos => {
-      userLat = pos.coords.latitude;
-      userLon = pos.coords.longitude;
-      try {
-        const r = await fetch(`${NOMINATIM}?lat=${userLat}&lon=${userLon}&format=json`);
-        const d = await r.json();
-        userCity = d.address?.city || d.address?.town || d.address?.village || 'Your location';
-      } catch { userCity = 'Your location'; }
+async function getAutoLocation(){
+  return new Promise((res,rej)=>{
+    navigator.geolocation.getCurrentPosition(async p=>{
+      uLat=p.coords.latitude;uLon=p.coords.longitude;
+      try{
+        const r=await fetch(`${NOM}?lat=${uLat}&lon=${uLon}&format=json`);
+        const d=await r.json();
+        uCity=d.address?.city||d.address?.town||d.address?.village||'Your location';
+      }catch{uCity='Your location';}
       res();
-    }, rej, { timeout: 8000 });
+    },rej,{timeout:8000});
   });
 }
 
-async function getManualLocation(query) {
-  const r = await fetch(`${GEO_API}?name=${encodeURIComponent(query)}&count=1&language=en&format=json`);
-  const d = await r.json();
-  if (!d.results?.length) throw new Error('Location not found. Try a nearby city name.');
-  userLat = d.results[0].latitude;
-  userLon = d.results[0].longitude;
-  userCity = d.results[0].name + (d.results[0].country ? ', ' + d.results[0].country : '');
+async function getManualLocation(query){
+  const r=await fetch(`${GEO_API}?name=${encodeURIComponent(query)}&count=5&language=en&format=json`);
+  const d=await r.json();
+  if(!d.results?.length)throw new Error('Location not found. Try a more specific name.');
+  const loc=d.results[0];
+  uLat=loc.latitude;uLon=loc.longitude;
+  uCity=`${loc.name}${loc.admin1?', '+loc.admin1:''}${loc.country?', '+loc.country:''}`;
 }
 
-// ── Main planner ─────────────────────────────────────────────────────────────
+function setLoad(msg){document.getElementById('load-msg').textContent=msg;}
 
-async function planSession() {
-  const dateStr = document.getElementById('obs-date').value;
-  const timeStr = document.getElementById('obs-time').value;
-  if (!dateStr) { alert('Please select a date.'); return; }
+async function planSession(){
+  const dateStr=document.getElementById('obs-date').value;
+  const timeStr=document.getElementById('obs-time').value;
+  if(!dateStr){alert('Please select a date.');return;}
 
-  document.getElementById('loading').style.display = 'block';
+  document.getElementById('loading').style.display='block';
   document.getElementById('results').classList.remove('visible');
 
-  try {
-    if (locMode === 'auto') {
-      await getAutoLocation();
-    } else {
-      const q = document.getElementById('loc-input').value.trim();
-      if (!q) { alert('Please enter a location.'); document.getElementById('loading').style.display='none'; return; }
+  try{
+    setLoad('Getting location…');
+    if(locMode==='auto'){await getAutoLocation();}
+    else{
+      const q=document.getElementById('loc-input').value.trim();
+      if(!q){alert('Please enter a location.');document.getElementById('loading').style.display='none';return;}
       await getManualLocation(q);
     }
+    setLoad('Fetching weather forecast…');
 
-    const obsDate = new Date(dateStr + 'T' + timeStr);
+    const obsDate=new Date(dateStr+'T'+timeStr);
+    const obsHour=parseInt(timeStr.split(':')[0])+parseInt(timeStr.split(':')[1])/60;
 
-    // Fetch weather from Open-Meteo (free, no API key)
-    const params = new URLSearchParams({
-      latitude: userLat, longitude: userLon, timezone: 'auto',
-      forecast_days: 3,
-      daily: 'precipitation_sum,cloud_cover_mean,wind_speed_10m_max',
-      hourly: 'cloud_cover,temperature_2m,relative_humidity_2m,wind_speed_10m,visibility'
+    const params=new URLSearchParams({
+      latitude:uLat,longitude:uLon,timezone:'auto',forecast_days:3,
+      daily:'precipitation_sum,cloud_cover_mean,wind_speed_10m_max',
+      hourly:'cloud_cover,temperature_2m,relative_humidity_2m,wind_speed_10m,visibility,precipitation_probability'
     });
-    const wxRes = await fetch(`${WEATHER_API}?${params}`);
-    const wx = await wxRes.json();
+    const wx=await fetch(`${WX_API}?${params}`);
+    const wxd=await wx.json();
 
-    const dateIdx  = (wx.daily?.time  || []).indexOf(dateStr);
-    const hourKey  = dateStr + 'T' + timeStr.substring(0,5);
-    const hourIdx  = (wx.hourly?.time || []).indexOf(hourKey);
+    const dateIdx=(wxd.daily?.time||[]).indexOf(dateStr);
+    const hourKey=dateStr+'T'+timeStr.substring(0,5);
+    const hourIdx=(wxd.hourly?.time||[]).indexOf(hourKey);
 
-    let cloud = 40, temp = 24, humidity = 55, wind = 8, vis = 20, precip = 0;
-    if (dateIdx >= 0) {
-      cloud  = wx.daily.cloud_cover_mean[dateIdx]  ?? cloud;
-      precip = wx.daily.precipitation_sum[dateIdx] ?? precip;
-      wind   = wx.daily.wind_speed_10m_max[dateIdx] ?? wind;
+    let cloud=40,temp=24,humidity=55,wind=8,vis=20,precip=0,rainProb=10;
+    if(dateIdx>=0){
+      cloud=wxd.daily.cloud_cover_mean[dateIdx]??cloud;
+      precip=wxd.daily.precipitation_sum[dateIdx]??precip;
+      wind=wxd.daily.wind_speed_10m_max[dateIdx]??wind;
     }
-    if (hourIdx >= 0) {
-      cloud    = wx.hourly.cloud_cover[hourIdx]           ?? cloud;
-      temp     = wx.hourly.temperature_2m[hourIdx]        ?? temp;
-      humidity = wx.hourly.relative_humidity_2m[hourIdx]  ?? humidity;
-      wind     = wx.hourly.wind_speed_10m[hourIdx]        ?? wind;
-      vis      = (wx.hourly.visibility[hourIdx] ?? 20000) / 1000;
+    if(hourIdx>=0){
+      cloud=wxd.hourly.cloud_cover[hourIdx]??cloud;
+      temp=wxd.hourly.temperature_2m[hourIdx]??temp;
+      humidity=wxd.hourly.relative_humidity_2m[hourIdx]??humidity;
+      wind=wxd.hourly.wind_speed_10m[hourIdx]??wind;
+      vis=(wxd.hourly.visibility[hourIdx]??20000)/1000;
+      rainProb=wxd.hourly.precipitation_probability[hourIdx]??10;
     }
 
-    // Astronomy
-    const moon    = moonPhase(obsDate);
-    const times   = moonRiseSet(obsDate, userLat, userLon);
-    const planets = planetVisibility(obsDate);
-    const bonus   = bonusObjects(obsDate, userLat);
+    setLoad('Computing planetary positions…');
+    const moon=moonPhase(obsDate);
+    const moonTimes=moonRiseSetAccurate(obsDate,uLat,uLon);
+    const planets=planetPositions(obsDate);
+    const constellations=getConstellations(obsDate,uLat,obsHour);
 
-    // Score (0–100)
-    let score = 100;
-    if (cloud > 80)    score -= 40; else if (cloud > 50) score -= 25; else if (cloud > 20) score -= 10;
-    if (moon.illum > 80) score -= 25; else if (moon.illum > 40) score -= 12;
-    if (precip > 1)    score -= 30;
-    if (wind > 30)     score -= 10;
-    if (humidity > 85) score -= 5;
-    score = Math.max(5, Math.min(100, score));
+    let score=100;
+    if(cloud>80)score-=40;else if(cloud>50)score-=25;else if(cloud>20)score-=10;
+    if(moon.illum>80)score-=25;else if(moon.illum>40)score-=12;
+    if(precip>1)score-=30;if(wind>30)score-=10;if(humidity>85)score-=5;
+    score=Math.max(5,Math.min(100,score));
 
-    // ── Render ──────────────────────────────────────────────────
+    setLoad('Building sky report…');
 
-    // Score
-    const dial = document.getElementById('score-dial');
-    document.getElementById('score-num').textContent = score;
-    if (score >= 70) {
-      dial.className = 'score-dial good';
-      document.getElementById('score-title').textContent = 'Great night for stargazing';
-      document.getElementById('score-badge').innerHTML = '<span class="badge badge-good">Go out tonight!</span>';
-    } else if (score >= 40) {
-      dial.className = 'score-dial ok';
-      document.getElementById('score-title').textContent = 'Decent session possible';
-      document.getElementById('score-badge').innerHTML = '<span class="badge badge-ok">Partial session</span>';
-    } else {
-      dial.className = 'score-dial bad';
-      document.getElementById('score-title').textContent = 'Poor conditions tonight';
-      document.getElementById('score-badge').innerHTML = '<span class="badge badge-bad">Consider rescheduling</span>';
-    }
-    document.getElementById('score-meta').textContent = `${userCity} · ${obsDate.toDateString()} · ${timeStr}`;
+    const dial=document.getElementById('score-dial');
+    document.getElementById('score-num').textContent=score;
+    if(score>=70){dial.className='score-dial dial-good';document.getElementById('score-title').textContent='Great night for stargazing';document.getElementById('score-badge').innerHTML='<span class="badge bg">Go out tonight!</span>';}
+    else if(score>=40){dial.className='score-dial dial-ok';document.getElementById('score-title').textContent='Decent session possible';document.getElementById('score-badge').innerHTML='<span class="badge bo">Partial session</span>';}
+    else{dial.className='score-dial dial-bad';document.getElementById('score-title').textContent='Poor conditions tonight';document.getElementById('score-badge').innerHTML='<span class="badge bb">Consider rescheduling</span>';}
+    document.getElementById('score-meta').textContent=`${uCity} · ${obsDate.toDateString()} · ${timeStr}`;
 
-    // Weather metrics
-    const cb = c => c < 20 ? 'badge-good' : c < 60 ? 'badge-ok' : 'badge-bad';
-    document.getElementById('weather-grid').innerHTML = `
-      <div class="metric"><div class="metric-lbl">// cloud cover</div><div class="metric-val">${Math.round(cloud)}%</div><div class="metric-sub"><span class="badge ${cb(cloud)}">${cloud<20?'Clear':cloud<60?'Partly cloudy':'Overcast'}</span></div></div>
-      <div class="metric"><div class="metric-lbl">// temperature</div><div class="metric-val">${Math.round(temp)}°C</div><div class="metric-sub">At ${timeStr}</div></div>
-      <div class="metric"><div class="metric-lbl">// humidity</div><div class="metric-val">${Math.round(humidity)}%</div><div class="metric-sub">${humidity>80?'Dew risk':'Comfortable'}</div></div>
-      <div class="metric"><div class="metric-lbl">// wind</div><div class="metric-val">${Math.round(wind)}</div><div class="metric-sub">km/h · ${wind<15?'Calm':'Breezy'}</div></div>
-      <div class="metric"><div class="metric-lbl">// precipitation</div><div class="metric-val">${precip.toFixed(1)}</div><div class="metric-sub">mm · <span class="badge ${precip<0.5?'badge-good':precip<2?'badge-ok':'badge-bad'}">${precip<0.5?'None':'Rain'}</span></div></div>
-      <div class="metric"><div class="metric-lbl">// visibility</div><div class="metric-val">${vis.toFixed(0)}</div><div class="metric-sub">km · ${vis>15?'Excellent':'Reduced'}</div></div>
+    const cb=c=>c<20?'bg':c<60?'bo':'bb';
+    document.getElementById('weather-score-badge').innerHTML=`<span class="badge ${cb(cloud)}">${cloud<20?'Clear skies':cloud<60?'Partly cloudy':'Overcast'}</span>`;
+    document.getElementById('weather-grid').innerHTML=`
+      <div class="metric"><div class="ml">// cloud cover</div><div class="mv">${Math.round(cloud)}%</div><div class="ms"><span class="badge ${cb(cloud)}">${cloud<20?'Clear':cloud<60?'Partial':'Heavy'}</span></div></div>
+      <div class="metric"><div class="ml">// temperature</div><div class="mv">${Math.round(temp)}°C</div><div class="ms">At ${timeStr}</div></div>
+      <div class="metric"><div class="ml">// humidity</div><div class="mv">${Math.round(humidity)}%</div><div class="ms">${humidity>80?'Dew risk':'OK'}</div></div>
+      <div class="metric"><div class="ml">// wind</div><div class="mv">${Math.round(wind)}</div><div class="ms">km/h · ${wind<15?'Calm':'Breezy'}</div></div>
+      <div class="metric"><div class="ml">// rain prob.</div><div class="mv">${Math.round(rainProb)}%</div><div class="ms"><span class="badge ${rainProb<20?'bg':rainProb<50?'bo':'bb'}">${rainProb<20?'Unlikely':rainProb<50?'Possible':'Likely'}</span></div></div>
+      <div class="metric"><div class="ml">// visibility</div><div class="mv">${vis.toFixed(0)}</div><div class="ms">km · ${vis>15?'Excellent':'Reduced'}</div></div>
     `;
-    document.getElementById('weather-tip').textContent = cloud < 20
-      ? 'Skies are clear — ideal for deep sky objects and astrophotography.'
-      : cloud < 50
-      ? 'Partial clouds expected. Watch for clear windows throughout the session.'
-      : 'Heavy cloud cover forecast. Monitor updates closer to session time.';
+    document.getElementById('weather-tip').textContent=cloud<20?'Clear skies forecast — ideal for deep sky objects and astrophotography.':cloud<50?'Some cloud cover expected. Watch for clear windows through the session.':'Heavy cloud cover likely. Monitor closer to the session time.';
 
-    // Moon
-    document.getElementById('moon-icon').textContent = moon.icon;
-    document.getElementById('moon-phase-name').textContent = moon.name;
-    document.getElementById('moon-illum').textContent = `${moon.illum}% illuminated`;
-    document.getElementById('illum-fill').style.width = moon.illum + '%';
-    document.getElementById('moonrise').textContent = times.rise;
-    document.getElementById('moonset').textContent = times.set;
-    const mb = moon.illum < 25 ? 'badge-good' : moon.illum < 60 ? 'badge-ok' : 'badge-bad';
-    const mm = moon.illum < 25 ? 'Excellent for deep sky' : moon.illum < 60 ? 'Moderate moonlight' : 'Bright — stick to planets';
-    document.getElementById('moon-badge').innerHTML = `<span class="badge ${mb}">${mm}</span>`;
+    const startH=Math.max(0,hourIdx-4),endH=Math.min((wxd.hourly.time||[]).length-1,hourIdx+8);
+    const hourLabels=[],cloudData=[],rainData=[];
+    for(let i=startH;i<=endH;i++){
+      const t=wxd.hourly.time[i];
+      if(!t)continue;
+      const h=parseInt(t.split('T')[1].split(':')[0]);
+      const ampm=h>=12?'PM':'AM';
+      hourLabels.push(`${h%12||12}${ampm}`);
+      cloudData.push(wxd.hourly.cloud_cover[i]??null);
+      rainData.push(wxd.hourly.precipitation_probability[i]??null);
+    }
 
-    // Planets
-    document.getElementById('planet-list').innerHTML = planets.map(p => `
+    const chartOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#7a849a',font:{size:11},autoSkip:false,maxRotation:45},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'#7a849a',font:{size:11}},grid:{color:'rgba(255,255,255,0.04)'},max:100,min:0}}};
+
+    if(cloudChart)cloudChart.destroy();
+    cloudChart=new Chart(document.getElementById('cloud-chart'),{
+      type:'line',
+      data:{labels:hourLabels,datasets:[{label:'Cloud %',data:cloudData,borderColor:'#7b9cff',backgroundColor:'rgba(123,156,255,0.1)',fill:true,tension:0.4,pointRadius:3,pointBackgroundColor:'#7b9cff'}]},
+      options:{...chartOpts,plugins:{...chartOpts.plugins,tooltip:{callbacks:{label:v=>`Cloud: ${v.raw}%`}}}}
+    });
+
+    if(rainChart)rainChart.destroy();
+    rainChart=new Chart(document.getElementById('rain-chart'),{
+      type:'bar',
+      data:{labels:hourLabels,datasets:[{label:'Rain prob %',data:rainData,backgroundColor:rainData.map(v=>v>50?'rgba(248,113,113,0.6)':v>20?'rgba(251,146,60,0.5)':'rgba(74,222,128,0.4)'),borderRadius:4}]},
+      options:{...chartOpts,plugins:{...chartOpts.plugins,tooltip:{callbacks:{label:v=>`Rain: ${v.raw}%`}}}}
+    });
+
+    document.getElementById('moon-icon').textContent=moon.icon;
+    document.getElementById('moon-phase-name').textContent=moon.name;
+    document.getElementById('moon-illum').textContent=`${moon.illum}% illuminated`;
+    document.getElementById('illum-fill').style.width=moon.illum+'%';
+    document.getElementById('moonrise').textContent=moonTimes.rise;
+    document.getElementById('moonset').textContent=moonTimes.set;
+    document.getElementById('moon-transit').textContent=moonTimes.transit;
+    const mb=moon.illum<25?'bg':moon.illum<60?'bo':'bb';
+    const mm=moon.illum<25?'Excellent for deep sky':moon.illum<60?'Moderate moonlight':'Bright — stick to planets';
+    document.getElementById('moon-badge').innerHTML=`<span class="badge ${mb}">${mm}</span>`;
+
+    const moonVisible=moonTimes.riseH>=0?isObjectAboveHorizon(moonTimes.riseH,moonTimes.setH,obsHour):true;
+    const sunTimes=solarPosition(obsDate);
+    const jd=julianDay(obsDate);
+    const LST_base=(280.46061837+360.98564736629*(jd-2451545))%360;
+    const LST=(LST_base+uLon)%360;
+
+    const visObjects=[
+      {name:'Moon',type:'Moon',riseH:moonTimes.riseH,setH:moonTimes.setH,note:`${moon.name}, ${moon.illum}% lit`},
+      ...planets.map(p=>({name:p.name,type:'Planet',riseH:-1,setH:-1,note:`${p.status} · elong. ${p.elong}°`,alwaysVisible:p.elong>18&&p.status!=='Too close to sun'})),
+    ];
+
+    let tableHTML=`<table class="sky-table" style="width:100%;"><thead><tr><th>Object</th><th>Type</th><th>At ${timeStr}</th><th>Notes</th></tr></thead><tbody>`;
+    visObjects.forEach(obj=>{
+      let vis2,cls;
+      if(obj.type==='Moon'){
+        if(moonTimes.riseH<0){vis2='Always up';cls='yes';}
+        else if(moonVisible){vis2='✓ Visible';cls='yes';}
+        else{vis2='✗ Below horizon';cls='no';}
+        if(moon.illum<5){vis2='✗ New moon';cls='no';}
+      } else {
+        const p=planets.find(x=>x.name===obj.name);
+        if(p.status==='Too close to sun'){vis2='✗ Too close to sun';cls='no';}
+        else if(p.status==='Near opposition'){vis2='✓ Visible';cls='yes';}
+        else if(p.status==='Evening sky'){vis2=obsHour>=18&&obsHour<24?'✓ Visible':'~ Depends on time';cls=obsHour>=18?'yes':'partial';}
+        else{vis2=obsHour>=0&&obsHour<6?'✓ Visible':'~ Depends on time';cls=obsHour<6?'yes':'partial';}
+      }
+      tableHTML+=`<tr><td>${obj.name}</td><td style="color:var(--muted);font-family:var(--mono);font-size:11px;">${obj.type}</td><td class="${cls}">${vis2}</td><td style="color:var(--muted);font-size:12px;">${obj.note}</td></tr>`;
+    });
+    constellations.slice(0,5).forEach(c=>{
+      tableHTML+=`<tr><td>${c.name}</td><td style="color:var(--muted);font-family:var(--mono);font-size:11px;">Constellation</td><td class="yes">✓ In season</td><td style="color:var(--muted);font-size:12px;">${c.desc}</td></tr>`;
+    });
+    tableHTML+='</tbody></table>';
+    document.getElementById('visibility-table-wrap').innerHTML=tableHTML;
+
+    document.getElementById('planet-list').innerHTML=planets.map(p=>`
       <div class="planet-row">
-        <div class="planet-left">
-          <div class="planet-sym">${p.sym}</div>
-          <div><div class="planet-name">${p.name}</div><div style="font-size:11px;color:var(--text-muted);font-family:var(--mono);">elong. ${p.elong}°</div></div>
+        <div class="pl-left">
+          <div class="pl-sym">${p.sym}</div>
+          <div><div class="pl-name">${p.name}</div><div class="pl-sub">elong. ${p.elong}° · ${p.status}</div></div>
         </div>
-        <div class="planet-right"><div>${p.status}</div><div>${p.when}</div></div>
+        <div class="pl-right"><div style="color:var(--text);">${p.when}</div></div>
       </div>`).join('');
 
-    // Bonus objects
-    document.getElementById('bonus-list').innerHTML = bonus.map(b => `
+    document.getElementById('constellation-list').innerHTML=constellations.map(c=>`
       <div class="bonus-chip">
-        <div class="bonus-chip-name">${b.name}</div>
-        <div class="bonus-chip-note">${b.note}</div>
+        <div class="bc-name">${c.name}</div>
+        <div class="bc-note">${c.desc}</div>
       </div>`).join('');
 
-    // Tips
-    const tips = [];
-    if (cloud < 30)    tips.push('Arrive 20–30 min early to allow your eyes to dark-adapt fully.');
-    if (moon.illum > 50) tips.push('High moon brightness — orient your telescope away from the moon for faint objects.');
-    if (humidity > 75) tips.push('High humidity may cause dew on optics. Bring a dew cloth or heater strip.');
-    if (wind < 15)     tips.push('Calm winds — good night for long-exposure astrophotography.');
-    tips.push('Use red-light mode on your phone to preserve night vision between views.');
-    tips.push('Identify the darkest part of your horizon and start your deep sky session there.');
-    document.getElementById('tips-list').innerHTML = tips.map(t =>
-      `<div class="tip"><div class="tip-dot"></div><div>${t}</div></div>`).join('');
+    const month=obsDate.getMonth();
+    const bonus=[];
+    if(month>=5&&month<=8)bonus.push({name:'Milky Way core',note:'Face south after midnight'});
+    if(month===7)bonus.push({name:'Perseids shower',note:'Peak Aug 11–13 · ~100/hr'});
+    if(month>=10||month<=1)bonus.push({name:'Orion Nebula M42',note:'Naked eye from dark sites'});
+    bonus.push({name:'Andromeda M31',note:'Best naked-eye galaxy'},{name:'Pleiades cluster',note:'Binoculars best · 7 sisters'});
+    if(month>=3&&month<=8)bonus.push({name:'Virgo galaxy cluster',note:'Telescope needed'});
+    document.getElementById('bonus-list').innerHTML=bonus.map(b=>`<div class="bonus-chip"><div class="bc-name">${b.name}</div><div class="bc-note">${b.note}</div></div>`).join('');
 
-    document.getElementById('loading').style.display = 'none';
+    const tips=[];
+    if(!moonVisible&&moon.illum<40)tips.push('Moon is below horizon at your session time — excellent for faint deep sky objects.');
+    else if(moon.illum>70)tips.push('Bright moon tonight — face away from it and focus on planets and bright star clusters.');
+    if(cloud<25)tips.push('Clear forecast — arrive 20 min early to dark-adapt your eyes.');
+    if(humidity>75)tips.push('High humidity tonight. Bring a microfibre cloth — optics may dew up.');
+    if(wind<12)tips.push('Calm winds — good conditions for long-exposure astrophotography.');
+    tips.push('Use red-light mode on your phone to preserve night vision.');
+    tips.push('Point your scope to the darkest part of the horizon first for best contrast.');
+    document.getElementById('tips-list').innerHTML=tips.map(t=>`<div class="tip"><div class="tip-dot"></div><div>${t}</div></div>`).join('');
+
+    document.getElementById('loading').style.display='none';
     document.getElementById('results').classList.add('visible');
 
-  } catch (e) {
-    document.getElementById('loading').style.display = 'none';
-    alert('Error: ' + (e.message || 'Could not fetch data. Check your internet connection.'));
+  }catch(e){
+    document.getElementById('loading').style.display='none';
+    alert('Error: '+(e.message||'Could not fetch data. Check your connection.'));
   }
 }
 </script>
-</body>
-</html>
